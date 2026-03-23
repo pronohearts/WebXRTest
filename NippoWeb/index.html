@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>日報管理システム - Nippo Web</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="logo">
+                <span class="logo-icon">📊</span>
+                <span class="logo-text">Nippo Web</span>
+            </div>
+            <nav class="nav-menu">
+                <button class="nav-item active" data-tab="register-tab">
+                    <span class="icon">✏️</span> 予定登録
+                </button>
+                <button class="nav-item" data-tab="update-tab">
+                    <span class="icon">🔄</span> 実績更新
+                </button>
+                <button class="nav-item" data-tab="view-tab">
+                    <span class="icon">🔍</span> 日報確認
+                </button>
+                <button class="nav-item" data-tab="analysis-tab">
+                    <span class="icon">📈</span> 集計分析
+                </button>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="status-indicator">
+                    <span class="dot online"></span> 連携中 (Google Sheets)
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="content-header">
+                <h1 id="page-title">予定登録</h1>
+                <div class="user-profile">
+                    <span class="user-name">Guest User</span>
+                </div>
+            </header>
+
+            <!-- TAB: Register Plan -->
+            <section id="register-tab" class="tab-content active">
+                <div class="card glass">
+                    <form id="register-form">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="reg-date">日付</label>
+                                <input type="date" id="reg-date" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="reg-worker">作業者</label>
+                                <input type="text" id="reg-worker" placeholder="氏名" list="worker-suggestions" required>
+                                <datalist id="worker-suggestions"></datalist>
+                            </div>
+                            <div class="form-group full-width">
+                                <label for="reg-project">プロジェクト名</label>
+                                <input type="text" id="reg-project" placeholder="プロジェクト名を入力または選択" list="project-suggestions" required>
+                                <datalist id="project-suggestions"></datalist>
+                            </div>
+                            <div class="form-group full-width">
+                                <label for="reg-content">作業内容 (タスク)</label>
+                                <textarea id="reg-content" rows="3" placeholder="予定している具体的な作業を記入してください" required></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="reg-est">予想工数 (h)</label>
+                                <input type="number" id="reg-est" step="0.5" min="0" value="1.0" required>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn primary">予定を登録する</button>
+                            <button type="reset" class="btn secondary">リセット</button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- TAB: Update Progress -->
+            <section id="update-tab" class="tab-content">
+                <div class="card glass">
+                    <div class="update-header">
+                        <h3>当日の登録済みタスク</h3>
+                        <p class="text-muted">実績工数と進捗を更新してください</p>
+                    </div>
+                    <div id="update-list-container">
+                        <!-- Dynamic update rows will be injected here -->
+                        <div class="empty-state">
+                            <p>本日の予定はありません。まずは予定登録を行ってください。</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB: View -->
+            <section id="view-tab" class="tab-content">
+                <div class="filter-bar card">
+                    <div class="filter-group">
+                        <label>日付</label>
+                        <input type="date" id="view-date-filter">
+                    </div>
+                    <div class="filter-group">
+                        <label>作業者</label>
+                        <select id="view-worker-filter">
+                            <option value="all">全員</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="card glass no-padding">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>日付</th>
+                                <th>作業者</th>
+                                <th>プロジェクト名</th>
+                                <th>作業内容</th>
+                                <th>予想工数</th>
+                                <th>実績工数</th>
+                                <th>進捗</th>
+                                <th>備考</th>
+                            </tr>
+                        </thead>
+                        <tbody id="nippo-list">
+                            <!-- Data will be injected here -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- TAB: Analysis -->
+            <section id="analysis-tab" class="tab-content">
+                <div class="analysis-filter-bar card glass">
+                    <div class="filter-group">
+                        <label>期間指定</label>
+                        <div class="date-range">
+                            <input type="date" id="ana-date-from">
+                            <span>〜</span>
+                            <input type="date" id="ana-date-to">
+                        </div>
+                    </div>
+                    <div class="filter-group">
+                        <label>作業者 (複数選択)</label>
+                        <div class="multi-select-container card" id="ana-worker-multi">
+                            <!-- Dynamically populated -->
+                        </div>
+                    </div>
+                    <div class="filter-group">
+                        <label>プロジェクト (複数選択)</label>
+                        <div class="multi-select-container card" id="ana-project-multi">
+                            <!-- Dynamically populated -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="analysis-grid">
+                    <div class="card glass chart-card">
+                        <h3>プロジェクト別 工数集計</h3>
+                        <canvas id="project-chart"></canvas>
+                    </div>
+                    <div class="card glass stats-card">
+                        <h3>サマリー</h3>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <span class="stat-label">合計予想工数</span>
+                                <span class="stat-value" id="stat-total-est">0.0 h</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">合計実績工数</span>
+                                <span class="stat-value" id="stat-total-act">0.0 h</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">予実差異 (H)</span>
+                                <span class="stat-value highlight" id="stat-diff-act">0.0 h</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Notification system -->
+    <div id="toast-container"></div>
+
+    <script src="js/gsheets.js?v=2.0"></script>
+    <script src="js/app.js?v=2.0"></script>
+</body>
+</html>
